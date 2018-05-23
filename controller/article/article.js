@@ -22,7 +22,7 @@ class ArticleController {
   static async getArticleList (ctx) {
     const { page = 1, pageSize = 5 } = ctx.query
     const skip = page === 1 ? 0 : (page - 1) * pageSize
-    const art = await Article
+    const list = await Article
       .find({})
       .select({content: 0, __v: 0})
       .limit(+pageSize)
@@ -38,7 +38,7 @@ class ArticleController {
     ctx.status = 201
     ctx.body = {
       code: 0,
-      data: { art, total },
+      data: { list, total },
     }
   }
   /**

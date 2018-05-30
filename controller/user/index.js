@@ -8,14 +8,23 @@ class UserController {
    */
   static async register (ctx) {
     const { username, password } = ctx.request.body
-    const isExisted = await User.find({ username })
-    if (isExisted.length) {
-      ctx.throw(406, 'username已存在')
-    } else {
+    try {
+      const isExisted = await User.findOne({ username })
+      if (!!isExisted) {
+        return ctx.body = {
+          success: false,
+          err: '用户名已存在'
+        }
+      }
       const user = await User.create({ username, password: UserController.md5Pwd(password) })
       ctx.body = {
         code: 0,
         message: '注册成功'
+      }
+    } catch(e) {
+      ctx.body = {
+        success: false,
+        data: e
       }
     }
   }
@@ -24,21 +33,25 @@ class UserController {
    */
   static async login (ctx) {
     const { username, password } = ctx.request.body
-    const user = await User.find({ username, password: UserController.md5Pwd(password) })
-      .then(doc => {
-        if (!doc.length) {
-          return ctx.throw(401, '登录失败')
+    try {
+      const user = await User.findOne({ username, password: UserController.md5Pwd(password) })
+      const token = jwt.sign({
+        data: { username: user.username },
+        exp: Math.floor(Date.now() / 1000) + (60 * 60),
+      }, secret)
+      ctx.cookies.set('token', token)
+      ctx.body = {
+        code: 0,
+        data: {
+          token: token
         }
-        ctx.body = {
-          message: '登录成功',
-          code: 0,
-          token: jwt.sign({
-            data: doc,
-            exp: Math.floor(Date.now() / 1000) + (60 * 60),
-          }, secret)
-        }
-      })
-    
+      }
+    } catch (e) {
+      ctx.body = {
+        success: false,
+        data: e
+      }
+    }
   }
   /**
    * md5加密
